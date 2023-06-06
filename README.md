@@ -4,3 +4,4 @@ The best out there if you ask me ^^
 Consider to visit Meshlab's GitHub aswell, or their website: https://www.meshlab.net/
 
 I have no clue what licences are, what opensource has to do with it and so on, and so on. So please be responsible!
+When you have questions or would like to connect, just write a message on instagram: el_flaco_loco_xoxo
