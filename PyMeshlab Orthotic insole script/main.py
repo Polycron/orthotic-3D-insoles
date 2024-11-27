@@ -1,65 +1,61 @@
 
-#Disclaimer: I had no Idea what I was doing. I just coded this script to not have to do it all by hand in Meshlab
-#Don't expect anything fancy really, but it "works" somehow. If it makes sense in a anatomical way is up to the debate!
-#The Output file is meant to be part of a orthotic insole, it is meant to be 3D printed in a suitable material.
+# Disclaimer: I had no Idea what I was doing. I just coded this script to not have to do it all by hand in Meshlab
+# Don't expect anything fancy really, but it "works" somehow. If it makes sense in a anatomical way is up to the debate!
+# The Output file is meant to be part of an orthotic insole, it is meant to be 3D printed in a suitable material.
 
 import pymeshlab  # Meshlab
 import polyscope  # 3D GUI         or import "as MeshSet"? I have no Idea
 
 
-MeshSet = pymeshlab.MeshSet()  #class containing all meshes
-Percentage = pymeshlab.Percentage #something for percentage values at some point (no idea)
-polyscope.set_up_dir("neg_z_up")  #set "upwards" direction in polyscope
+MeshSet = pymeshlab.MeshSet()  # class containing all meshes
+Percentage = pymeshlab.Percentage # something for percentage values at some point (no idea)
+polyscope.set_up_dir("neg_z_up")  # set "upwards" direction in polyscope
 polyscope.init()
 
 
 # Begin declaration of functions
 
-def LoadMesh():                                             #Load Mesh and decrease number of faces
+def LoadMesh():                                             # Load Mesh
     Dateiname = input("Geben sie den Namen der Datei ein:/Input Filename:")
     MeshSet.load_new_mesh(Dateiname)
-    MeshSet.meshing_decimation_clustering(threshold=Percentage(0.75))
+    #polyscope.set_autocenter_structures(True)
     MeshSet.compute_matrix_from_scaling_or_normalization(scalecenter=1, uniformflag=1, axisx=skalierungsfaktor)
-    # MeshSet.meshing_decimation_quadric_edge_collapse(targetfacenum=10000)
+    MeshSet.meshing_decimation_quadric_edge_collapse(targetfacenum=75000)
+    #MeshSet.set_current_mesh(0)
+    #MeshSet.meshing_decimation_clustering(threshold=Percentage(0.5))
     return
 
-'''
-def PrintLenghtOfMeshSet():
-    MeshSet.__getitem__(0)
-    var = len(MeshSet)                                      #no idea, didn't work i guess. Don't need it anyway
-    print("Die Anzahl der Netzkörper beträgt:", var)
-    return
-'''
 
-def ShowInPolyscope():                                      #show what has happened in Polyscope (3D GUI)
+def ShowInPolyscope():                                     #show what has happened in Polyscope (3D GUI)
     MeshSet.current_mesh()
     MeshSet.show_polyscope()
     return
 
 
-def RotateToFitOnXYPlane():                                 #Rotate the Scan of the foot (negative Z up)
-    MeshSet.set_selection_all()                             #No idea how it works, but it's alway negative z up for all scans I had, so...
-    # MeshSet.compute_selection_from_mesh_border()
-    MeshSet.compute_matrix_by_principal_axis
-    MeshSet.compute_matrix_by_fitting_to_plane(targetplane="XY plane", toorigin=True)
-    MeshSet.compute_matrix_by_principal_axis
-    MeshSet.compute_matrix_by_fitting_to_plane(targetplane="XY plane", toorigin=True)
+def RotateToFitOnXYPlane():                                #Rotate the Scan of the foot
+    MeshSet.set_current_mesh(0)
+    MeshSet.compute_selection_from_mesh_border()
+    #MeshSet.compute_matrix_by_principal_axis()
+    #ShowInPolyscope()
+    MeshSet.compute_matrix_by_fitting_to_plane(targetplane='XY plane', rotaxis='Z axis', toorigin=True)
+    ShowInPolyscope()
+    #MeshSet.compute_matrix_by_fitting_to_plane(targetplane='XY plane', rotaxis='X axis', toorigin=True)
+    #ShowInPolyscope()
+    #MeshSet.compute_matrix_by_principal_axis()
+    #ShowInPolyscope()
+    #MeshSet.compute_matrix_from_rotation(rotaxis=2, rotcenter=1, angle=90)
+    #ShowInPolyscope()
     return
 
 
-def CreatePlaneOnBorder():                                  #Creates A Plane that covers the whole scan. You will see why
+def CreatePlaneOnBorder():                                  #Creates A Plane that covers the whole scan
     MeshSet.compute_selection_from_mesh_border()
-    MeshSet.generate_plane_fitting_to_selection(extent=1, subdiv=60, orientation=1)
+    MeshSet.generate_plane_fitting_to_selection(extent=1.2, subdiv=60, orientation=1)
     return
 
 
 def ColorizeMesh0():                                        #colorizes the Mesh according to the euclidean distance to the Plane
-    MeshSet.compute_scalar_by_distance_from_point_cloud_per_vertex(coloredmesh=0, vertexmesh=1)
-    return
-
-
-def SelectOverhang():                                       #Selects the unnecesary part of the scan to delete it afterwards
-    MeshSet.compute_selection_by_color_per_face(percentrh=1, percentgs=0.2, percentbv=1, colorspace=0)
+    MeshSet.compute_scalar_by_distance_from_point_cloud_per_vertex(coloredmesh=0, vertexmesh=1, radius=laenge/4)
     return
 
 
@@ -73,28 +69,25 @@ def SaveCurrentMesh():                                      #For creating a prin
     return
 
 
-# End of declaration of the functions (not all are being used i guess)
+#Begin Inputs
+print("Geben sie die gemessene Länge in mm ein:/Input the Length")
+laenge = float(input())
 
-
-# Begin Inputs
-print("Geben sie die gemessene Fußlänge in mm ein:/Input the Length of the Foot:")
-fusslaenge = int(input())
-
-while fusslaenge > 400 or fusslaenge < 200:
+while laenge > 400 or laenge < 200:
     print("Geben sie einen Wert zwischen 200 und 400mm ein:/Input a value between 200 and 400mm:")
-    fusslaenge = int(input())
-else:                                                                                   #This is for obtaining the scaling factor
-    print("Input:", fusslaenge, "mm Footlength")
+    laenge = float(input())
+else:
+    print("Input:", laenge, "mm laenge")
 
     print("Geben sie die gemessene Fußlänge aus Meshlab ein:/Input the length of the foot in Meshlab:")
-    fusslaengemeshlab = float(input())
-    print("Input:", fusslaengemeshlab, "Meshlab units")
+    laengemeshlab = float(input())
+    print("Input:", laengemeshlab, "Meshlab units")
 
-    skalierungsfaktor = fusslaenge / fusslaengemeshlab                                  #for obtaining the scaling factor
+    skalierungsfaktor = laenge / laengemeshlab
 
     print("Skalierungsfaktor berechnet/Factor for scaling calculated")
 
-    print("geben sie links oder rechts ein/input left or right foot")                   #<- Here you have to decide if left or right foot is being used
+    print("geben sie links oder rechts ein/input left or right foot")
 
 '''
 lire = str(input())
@@ -105,55 +98,50 @@ while lire != "links" or lire !="L" or lire != "l" or lire !="rechts" or lire !=
 else:
 '''
 
-lire = str(input())                                                                      #input left or right
+lire = str(input())
 if lire == "links" or lire == "L" or lire == "l":
     print("sie haben ", lire, " eingegeben.")
-    angle1 = float(-35)
-    angle2 = float(-7.5)
-    angle21 = float(7.5) #0 für Torsionsschnitt, 7.5 normal
+    angle1 = float(-39)
+    angle2 = float(-2.5)
+    angle21 = float(2.5)
+    #angle21 = float(-8.5) #0 für Torsionsschnitt, 7.5 normal
     angle3 = float(17.5)
-                                                                                        #values for either left or right foot
+
 elif lire == "rechts" or lire == "R" or lire == "r":
     print("sie haben ", lire, " eingegeben.")
-    angle1 = float(-35)
-    angle2 = float(7.5)
-    angle21 = float(-7.5) #0 für Torsionsschnitt, -7.5 normal
+    angle1 = float(-39)
+    angle2 = float(2.5)
+    angle21 = float(-2.5)
+    #angle21 = float(8.5) #0 für Torsionsschnitt, -7.5 normal
     angle3 = float(-17.5)
-# Ende Eingaben
 
 
 # Berechnungen der Höhen für das Ebenenkonstrukt
-x70 = (70 / 270) * fusslaenge
-x60 = (60 / 270) * fusslaenge
-x50 = (50 / 270) * fusslaenge                           #fusslaenge = footlength
-x40 = (40 / 270) * fusslaenge                           #some values, bullshit i guess
-x30 = (30 / 270) * fusslaenge                           #This was for maintaining correct relative distances of the planes
-x20 = (20 / 270) * fusslaenge
-x10 = (10 / 270) * fusslaenge                           #only x10 is being used
-# Ende der Berechnungen
+x10 = (10 / 270) * laenge
 
 LoadMesh()
 ShowInPolyscope()
-
-# begin cutting
 MeshSet.set_current_mesh(0)
-CreatePlaneOnBorder()  # Abdruck vom Überhang entfernen
+CreatePlaneOnBorder()
 ColorizeMesh0()
+RotateToFitOnXYPlane()
+MeshSet.set_current_mesh(0)
+MeshSet.compute_selection_by_color_per_face(percentrh=1, percentgs=0.125, percentbv=1, colorspace=0)
+MeshSet.meshing_remove_selected_vertices_and_faces()
+MeshSet.compute_scalar_by_border_distance_per_vertex()
+ShowInPolyscope()
+
 MeshSet.set_current_mesh(1)
 MeshSet.delete_current_mesh()
 MeshSet.set_current_mesh(0)
-SelectOverhang()
-MeshSet.meshing_remove_selected_vertices_and_faces()
-print("cutting successful")
-# end cutting
 
-ShowInPolyscope()
 
-RotateToFitOnXYPlane()
+#speichern des ausgerichteten Scans
+MeshSet.set_current_mesh(0)
+#MeshSet.meshing_invert_face_orientation(forceflip=True)
+#MeshSet.save_current_mesh(file_name="straight.stl", save_textures=False)
+MeshSet.save_current_mesh(file_name="straight.ply", save_textures=False)
 
-#MeshSet.save_current_mesh(file_name="Gedreht und geschnitten.stl", save_textures=True) #uncomment here for saving just the aligned Scan
-
-ShowInPolyscope()
 
 # Start plane construct
 MeshSet.set_current_mesh(0)
@@ -177,7 +165,7 @@ MeshSet.compute_matrix_from_rotation(rotaxis=1, rotcenter=1, angle=angle21) #sec
 
 MeshSet.set_current_mesh(3)
 MeshSet.compute_matrix_from_translation(traslmethod=0, axisz=-0)
-MeshSet.compute_matrix_from_rotation(rotaxis=0, rotcenter=1, angle=-3.5)    #arc tilt
+MeshSet.compute_matrix_from_rotation(rotaxis=0, rotcenter=1, angle=-5)      #arc tilt
 MeshSet.compute_matrix_from_rotation(rotaxis=1, rotcenter=1, angle=angle3)  #arc
 
 MeshSet.set_current_mesh(4)
@@ -187,14 +175,13 @@ MeshSet.compute_matrix_from_translation(traslmethod=0, axisz=-0)            #bas
 MeshSet.set_current_mesh(5)
 MeshSet.compute_matrix_from_translation(traslmethod=0, axisz=-x10)          #heel
 MeshSet.compute_matrix_from_rotation(rotaxis=0, rotcenter=1, angle=7.5)
-
 print("planes contructed")
-# End plane construct
 
-ShowInPolyscope()                                                           #here you will see what this is
+
+ShowInPolyscope()
+
 
 # Start selection
-
 MeshSet.set_current_mesh(0)
 MeshSet.set_current_mesh_visibility(0)
 
@@ -203,11 +190,12 @@ MeshSet.generate_by_merging_visible_meshes(mergevisible=1, deletelayer=True)
 MeshSet.set_current_mesh(0)
 MeshSet.set_current_mesh_visibility(1)
 
-MeshSet.compute_scalar_by_distance_from_point_cloud_per_vertex(coloredmesh=0, vertexmesh=7, radius=2*fusslaenge)  #!radius
+MeshSet.compute_scalar_by_distance_from_point_cloud_per_vertex(coloredmesh=0, vertexmesh=7, radius=2*laenge)  #!radius
 MeshSet.compute_selection_by_color_per_face(percentrh=1, percentgs=0.9, percentbv=1, colorspace=1)
-MeshSet.generate_from_selected_faces(deleteoriginal=0)  # 8
+MeshSet.generate_from_selected_faces(deleteoriginal=0)  # 8 Mesh
 
-print("Auswahl 0 getroffen")
+
+print("Selection 0")
 # End selection 0
 
 ShowInPolyscope()                                                           #here you will see what this is for
@@ -216,11 +204,12 @@ ShowInPolyscope()                                                           #her
 MeshSet.set_current_mesh(0)
 MeshSet.set_current_mesh_visibility(1)
 
-MeshSet.compute_scalar_by_distance_from_point_cloud_per_vertex(coloredmesh=0, vertexmesh=7, radius=2*fusslaenge)  #!radius
+MeshSet.compute_scalar_by_distance_from_point_cloud_per_vertex(coloredmesh=0, vertexmesh=7, radius=2*laenge)  #!radius
 MeshSet.compute_selection_by_color_per_face(percentrh=1, percentgs=0.95, percentbv=1, colorspace=1)
-MeshSet.generate_from_selected_faces(deleteoriginal=0)  # 9
+MeshSet.generate_from_selected_faces(deleteoriginal=0)  # 9 Mesh
 
-print("Auswahl 1 getroffen")
+
+print("Selection 1")
 # Ende Auswahl 1                                                            #same thing for different thickness
 
 ShowInPolyscope()
@@ -241,15 +230,25 @@ MeshSet.apply_coord_taubin_smoothing(lambda_=1, stepsmoothnum=50)
 MeshSet.set_current_mesh(9)
 MeshSet.apply_coord_taubin_smoothing(lambda_=1, stepsmoothnum=50)
 print("Glätten erfolgreich")
+
+ShowInPolyscope()
+
 MeshSet.set_current_mesh(8)
-MeshSet.generate_resampled_uniform_mesh(cellsize=Percentage(0.5), offset=Percentage(51.75), absdist=1)
+MeshSet.generate_resampled_uniform_mesh(cellsize=Percentage(0.25), offset=Percentage(51.75), absdist=1)
 MeshSet.set_current_mesh(9)
-MeshSet.generate_resampled_uniform_mesh(cellsize=Percentage(0.25), offset=Percentage(51.25), absdist=1)
+MeshSet.generate_resampled_uniform_mesh(cellsize=Percentage(0.125), offset=Percentage(51.0), absdist=1)
 #Ende smoothing and volumetrisation
 
-ShowInPolyscope()           #just take a look, it will make sense from now on
+'''
+MeshSet.set_current_mesh(8)
+MeshSet.save_current_mesh(file_name="Mesh8.stl", save_textures=True)
+MeshSet.set_current_mesh(9)
+MeshSet.save_current_mesh(file_name="Mesh9.stl", save_textures=True)
+'''
 
-#Verbinden
+ShowInPolyscope()
+
+# Verbinden
 MeshSet.set_current_mesh(0)
 MeshSet.set_current_mesh_visibility(0)
 MeshSet.set_current_mesh(7)
@@ -263,13 +262,19 @@ MeshSet.set_current_mesh(0)
 MeshSet.set_current_mesh_visibility(1)
 
 
-print("Volumetrische Darstellung abgeschlossen")
+print("volumetrisation finished")
 MeshSet.set_current_mesh(12)
+# MeshSet.meshing_decimation_clustering(threshold=Percentage(0.95))
+MeshSet.meshing_decimation_quadric_edge_collapse(targetfacenum=10000)
+# MeshSet.compute_matrix_from_rotation(rotaxis="X axis", rotcenter="barycenter", snapflag=False, angle=180)
+# MeshSet.set_current_mesh(0) #8 small insole cutout; 9 large cutout; 10 meshed 8; 11 meshed 9
 SaveCurrentMesh()
-print("Speichern erfolgreich, öffne Polyscope:")
+print("Saving successfull, opening polyscope")
 ShowInPolyscope()
 
 '''
-Author left foot Meshlab value: 14.119 units; Real life value: 282mm
-Author right foot Meshlab value: 14.006 units; real life value: 280mm
+MeshSet.set_current_mesh()
+print(MeshSet.current_mesh_id())
+Author left 14.119 und 282
+Author right 14.006 und 280
 '''
